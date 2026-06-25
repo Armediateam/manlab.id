@@ -1,0 +1,1 @@
+import{dt as e,pt as t}from"./app-DHNZDlKZ.js";import{n,t as r}from"./empty-module-page-Cl7BgnGH.js";var i=t(),a=e();function o(){let e=(0,i.c)(1),t;return e[0]===Symbol.for(`react.memo_cache_sentinel`)?(t=(0,a.jsx)(r,{title:`Settings`}),e[0]=t):t=e[0],t}o.layout={breadcrumbs:n(`Settings`,`/dashboard/settings`)};export{o as default};
