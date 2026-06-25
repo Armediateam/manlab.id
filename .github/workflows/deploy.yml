@@ -1,0 +1,58 @@
+name: Deploy to aaPanel
+
+on:
+  push:
+    branches:
+      - main  # Ganti dengan master jika branch utama Anda adalah master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, mysql, zip, pdo_mysql
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Composer Dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Install NPM Dependencies & Build Assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync Files to aaPanel
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REMOTE_HOST: ${{ secrets.SERVER_IP }}
+          REMOTE_USER: ${{ secrets.SSH_USER }}
+          TARGET: /www/wwwroot/manlab.id
+          ARGS: "-rlgoDzvO --delete"
+          EXCLUDE: "/node_modules/, /tests/, /phpunit.xml, /.git/, /.github/, /storage/app/public/, /storage/framework/cache/data/*, /storage/framework/sessions/*, /storage/framework/views/*, /storage/logs/*"
+
+      - name: Execute Post-Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /www/wwwroot/manlab.id
+            php artisan migrate --force
+            php artisan storage:link
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
